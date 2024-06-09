@@ -1,0 +1,7 @@
+# direktori
+/node_modules
+
+# file
+package-lock.json
+.env
+requests.rest
