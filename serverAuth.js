@@ -1,77 +1,82 @@
-require("dotenv").config();
+// Define "require"
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
 
+require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const express = require("express");
-
+import {
+  emailSignup,
+  emailSignin,
+  signout,
+  storeAccessToken,
+} from "./firebaseAuth.js";
 const app = express();
 app.use(express.json());
 
-app.post("/signup", (req, res) => {
-  const user = { email: req.body.email };
-  const accessToken = generateAccessToken(user);
-
-  // ganti dengan push accessToken ke firestore
-
+app.post("/signup", async (req, res) => {
   let signupData = {
-    username: req.body.username,
-    email: req.body.username,
+    name: req.body.name,
+    birth_date: req.body.birth_date,
+    gender: req.body.gender,
+    phone_number: req.body.phone_number,
+    email: req.body.email,
     password: req.body.password,
+    address: req.body.address,
   };
+  const httpRequest = await emailSignup(signupData);
+  const user = { user_id: httpRequest.user_id };
+  const accessToken = generateAccessToken(user);
+  httpRequest.statusCode === 200 ? storeAccessToken(accessToken) : null;
 
-  httpRequest = emailSignup(signupData);
-
-  res.statusCode(httpRequest.statusCode);
+  res.status(httpRequest.statusCode);
   res.json({
     status: httpRequest.status,
     message: httpRequest.message,
+    error: httpRequest.error,
     data: {
+      user_id: httpRequest.user_id,
       accessToken: accessToken,
     },
   });
 });
 
-app.post("/signin", (req, res) => {
-  const user = { email: req.body.email };
-  const accessToken = generateAccessToken(user);
-
-  // ganti dengan push accessToken ke firestore
-
+app.post("/signin", async (req, res) => {
   let signinData = {
     email: req.body.email,
     password: req.body.password,
   };
+  const httpRequest = await emailSignin(signinData);
+  const user = { user_id: httpRequest.user_id };
+  const accessToken = generateAccessToken(user);
+  httpRequest.statusCode === 200 ? storeAccessToken(accessToken) : null;
 
-  httpRequest = emailSignin(signinData);
-
-  res.statusCode(httpRequest.statusCode);
+  res.status(httpRequest.statusCode);
   res.json({
     status: httpRequest.status,
     message: httpRequest.message,
+    error: httpRequest.error,
     data: {
+      user_id: httpRequest.user_id,
       accessToken: accessToken,
     },
   });
 });
 
-app.delete("/logout", (req, res) => {
-  refreshTokens = refreshTokens.filter((token) => token !== req.body.token);
-  res.sendStatus(204);
+app.delete("/signout", (req, res) => {
+  let token = req.headers.authorization;
+  token = token.split(" ")[1];
+  signout(token);
+  res.json({
+    status: "Success",
+    message: "Signout complete",
+    error: null,
+  });
 });
 
 function generateAccessToken(user) {
-  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
-}
-
-function authenticateToken(req, res, next) {
-  // authorization: Bearer TOKEN // example auth header
-  const authHeader = req.headers["authorization"];
-  const token = authHeader.split(" ")[1];
-  if (token == null) return res.sendStatus(401);
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    // console.log(user);
-    req.user = user;
-    next();
+  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: "7 days",
   });
 }
 

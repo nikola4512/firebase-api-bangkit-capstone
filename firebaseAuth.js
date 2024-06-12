@@ -5,82 +5,172 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import { getFirestore, setDoc, doc } from "firebase/firestore";
+import {
+  getFirestore,
+  setDoc,
+  doc,
+  addDoc,
+  collection,
+  getDocs,
+  deleteDoc,
+  updateDoc,
+} from "firebase/firestore";
 
 // Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyDurUFIOsBc0Qqzrnh_KLUuWToEZ-lLvbE",
-  authDomain: "test-d12ec.firebaseapp.com",
-  databaseURL: "https://test-d12ec-default-rtdb.firebaseio.com",
-  projectId: "test-d12ec",
-  storageBucket: "test-d12ec.appspot.com",
-  messagingSenderId: "266859066579",
-  appId: "1:266859066579:web:f432d728d91d8f7b009026",
-  measurementId: "G-HCSJFB2FBE",
+  // DISESUAIN AJA INI DENGAN YG ADA DI FIREBASE
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-function emailSignup(userData) {
+const emailSignup = async (userData) => {
   const auth = getAuth();
   const db = getFirestore();
 
-  createUserWithEmailAndPassword(auth, userData.email, userData.password)
-    .then((userCredential) => {
-      const user = userCredential.user;
-      try {
-        const docRef = doc(db, "users", user.uid);
-        setDoc(docRef, userData);
-        const httpResponse = {
-          statusCode: 201,
-          status: "Success",
-          message: "Signup successful",
-        };
-        return httpResponse;
-      } catch (error) {
-        const httpResponse = {
-          statusCode: 500,
-          status: "Failed",
-          message: "Error writing document",
-        };
-        return httpResponse;
-      }
-    })
-    .catch((error) => {
+  try {
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      userData.email,
+      userData.password
+    );
+    const user = userCredential.user;
+    try {
+      delete userData.password;
+      await setDoc(doc(db, "users", user.uid), userData);
+      const httpResponse = {
+        statusCode: 201,
+        status: "Success",
+        message: "Signup successful",
+        user_id: user.uid,
+        error: null,
+      };
+      return httpResponse;
+    } catch (error) {
+      const httpResponse = {
+        statusCode: 500,
+        status: "Failed",
+        message: "Error writing document",
+        error: error,
+      };
+      return httpResponse;
+    }
+  } catch (error) {
+    const httpResponse = {
+      statusCode: 400,
+      status: "Failed",
+      message: "Email address Already Exists",
+      error: error,
+    };
+    return httpResponse;
+  }
+};
+
+const emailSignin = async (userData) => {
+  const auth = getAuth();
+
+  try {
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      userData.email,
+      userData.password
+    );
+    const user = userCredential.user;
+    const httpResponse = {
+      statusCode: 200,
+      status: "Success",
+      message: "Signin success",
+      user_id: user.uid,
+      error: null,
+    };
+    // console.log(httpResponse); //
+    return httpResponse;
+  } catch (error) {
+    if (error.code === "auth/invalid-credential") {
       const httpResponse = {
         statusCode: 400,
         status: "Failed",
-        message: "Address Already Exists",
+        message: "Incorrect Email or Password",
+        error: null,
       };
       return httpResponse;
-    });
-}
+    } else {
+      const httpResponse = {
+        statusCode: 400,
+        status: "Failed",
+        message: "Account does not Exist",
+        error: null,
+      };
+      return httpResponse;
+    }
+  }
+};
 
-function emailSignin(userData) {
-  const email = userData.email;
-  const password = userData.password;
-
-  signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      const user = userCredential.user;
-      localStorage.setItem("loggedInUserId", user.uid);
-      window.location.href = "homepage.html";
-    })
-    .catch((error) => {
-      const errorCode = error.code;
-    });
-}
-
-function userPost(post) {
+const signout = async (token) => {
   const db = getFirestore();
-  setDoc(doc(db, "posts"))
-    .then(() => {
-      return { status: "Success", error: null };
-    })
-    .catch((error) => {
-      return { status: "Failed", error: error };
-    });
-}
 
-module.exports = { emailSignup, emailSignin, userPost };
+  let deleteDocumentId = null;
+  const querySnapshot = await getDocs(collection(db, "access_token"));
+  querySnapshot.forEach((doc) => {
+    if (doc.data().token === token) {
+      deleteDocumentId = doc.id;
+      deleteAccessToken(deleteDocumentId);
+    }
+  });
+};
+
+const storeAccessToken = async (token) => {
+  const db = getFirestore();
+  try {
+    const currentDate = new Date();
+    await addDoc(collection(db, "access_token"), {
+      token: token,
+      created: currentDate,
+    });
+    return {
+      statusCode: 201,
+      status: "Success",
+      message: "The token already stored",
+      error: null,
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      status: "Failed",
+      message: "Failed to store token",
+      error: error,
+    };
+  }
+};
+
+const deleteAccessToken = async (deleteDocumentId) => {
+  const db = getFirestore();
+  await deleteDoc(doc(db, "access_token", deleteDocumentId));
+  // await db.collection("access_token").doc(deleteDocumentId).delete(); //
+};
+
+// DIBAWAH INI BELUM KELAR
+const getUserData = async (userId) => {
+  const db = getFirestore();
+  // let userData = null;
+  // const snapshot = await getDocs(collection(db, "users"));
+  // console.log(snapshot);
+  // snapshot.forEach((doc) => {
+  //   doc.id === userId ? (userData = doc.data()) : null;
+  // });
+  return userData;
+};
+
+const updateUserData = async (userId, userData) => {
+  const db = getFirestore();
+  await updateDoc(doc(db, "users", userId, { userData }));
+};
+
+export {
+  emailSignup,
+  emailSignin,
+  signout,
+  storeAccessToken,
+  deleteAccessToken,
+  getUserData,
+  updateUserData,
+};
