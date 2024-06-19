@@ -2,6 +2,10 @@
 /node_modules
 
 # file
-package-lock.json
 .env
+.firebaserc
+firebase.json
+firestore.indexes.json
+firestore.rules
+package-lock.json
 requests.rest

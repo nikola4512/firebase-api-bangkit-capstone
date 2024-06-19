@@ -4,12 +4,16 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "devStart": "nodemon server.js",
-    "devStartAuth": "nodemon serverAuth.js"
+    "test": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "deploy": "firebase deploy --only functions"
+  },
+  "engines": {
+    "node": "18"
   },
   "author": "Nikola Arinanda & Farhan Rizky Gunawan",
   "license": "ISC",
-  "description": "",
+  "description": "firebase API for SIBI translation android apps",
   "devDependencies": {
     "nodemon": "^3.1.3"
   },
@@ -18,6 +22,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "firebase": "^10.12.2",
+    "firebase-functions": "^5.0.1",
     "jsonwebtoken": "^9.0.2"
   }
 }

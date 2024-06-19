@@ -7,18 +7,27 @@ import {
 } from "firebase/auth";
 import {
   getFirestore,
-  setDoc,
   doc,
+  setDoc,
   addDoc,
-  collection,
+  getDoc,
   getDocs,
-  deleteDoc,
   updateDoc,
+  deleteDoc,
+  collection,
 } from "firebase/firestore";
 
 // Firebase config
 const firebaseConfig = {
-  // DISESUAIN AJA INI DENGAN YG ADA DI FIREBASE
+  apiKey: "AIzaSyBh-IDQKOcy7y_CrwAiPbomNvKN_JoOMWE",
+  authDomain: "capstone-1-424914.firebaseapp.com",
+  databaseURL:
+    "https://capstone-1-424914-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "capstone-1-424914",
+  storageBucket: "capstone-1-424914.appspot.com",
+  messagingSenderId: "867581057691",
+  appId: "1:867581057691:web:e3356b508161c9a530043e",
+  measurementId: "G-L4HFBFWL02",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -106,16 +115,27 @@ const emailSignin = async (userData) => {
 };
 
 const signout = async (token) => {
-  const db = getFirestore();
-
-  let deleteDocumentId = null;
-  const querySnapshot = await getDocs(collection(db, "access_token"));
-  querySnapshot.forEach((doc) => {
-    if (doc.data().token === token) {
-      deleteDocumentId = doc.id;
-      deleteAccessToken(deleteDocumentId);
-    }
-  });
+  try {
+    const db = getFirestore();
+    const snapshot = await getDocs(collection(db, "access_token"));
+    snapshot.forEach((doc) => {
+      if (doc.data().token === token) {
+        const documentId = doc.id;
+        deleteAccessToken(documentId);
+      }
+    });
+    return {
+      status: "Success",
+      message: "Signout complete",
+      error: null,
+    };
+  } catch (error) {
+    return {
+      status: "Failed",
+      message: "Signout failed",
+      error: error,
+    };
+  }
 };
 
 const storeAccessToken = async (token) => {
@@ -142,27 +162,56 @@ const storeAccessToken = async (token) => {
   }
 };
 
-const deleteAccessToken = async (deleteDocumentId) => {
+const deleteAccessToken = async (documentId) => {
   const db = getFirestore();
-  await deleteDoc(doc(db, "access_token", deleteDocumentId));
-  // await db.collection("access_token").doc(deleteDocumentId).delete(); //
+  await deleteDoc(doc(db, "access_token", documentId));
 };
 
-// DIBAWAH INI BELUM KELAR
 const getUserData = async (userId) => {
-  const db = getFirestore();
-  // let userData = null;
-  // const snapshot = await getDocs(collection(db, "users"));
-  // console.log(snapshot);
-  // snapshot.forEach((doc) => {
-  //   doc.id === userId ? (userData = doc.data()) : null;
-  // });
-  return userData;
+  try {
+    try {
+      const db = getFirestore();
+      const userData = await getDoc(doc(db, "users", userId));
+      // console.log(userData.data());
+      return {
+        status: "Success",
+        message: "Get user data success",
+        data: userData.data(),
+      };
+    } catch (error) {
+      return {
+        statusCode: 403,
+        status: "Forbidden",
+        message: "Can't authenticate access",
+        error: error,
+      };
+    }
+  } catch (error) {
+    return {
+      statusCode: 400,
+      status: "Failed",
+      message: "Can't get user data",
+      error: error,
+    };
+  }
 };
 
 const updateUserData = async (userId, userData) => {
-  const db = getFirestore();
-  await updateDoc(doc(db, "users", userId, { userData }));
+  try {
+    const db = getFirestore();
+    await updateDoc(doc(db, "users", userId), userData);
+    return {
+      status: "Success",
+      message: "Update user data success",
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      status: "Failed",
+      message: "Cannot update user data",
+      error: error,
+    };
+  }
 };
 
 export {
