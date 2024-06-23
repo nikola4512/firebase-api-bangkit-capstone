@@ -1,0 +1,651 @@
+openapi: 3.0.0
+info:
+  title: "Node JS API Project"
+  version: "1.0.0"
+servers:
+  - url: "http://localhost:3000/"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schema:
+    base:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        documentation_url:
+          type: string
+    signup:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+    signin:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+    signout:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+    getuser:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+    updateuser:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+    getquiz:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        data:
+          type: array
+    postquiz:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+    getmaterialpart:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        data:
+          type: array
+    getoneofthematerialpart:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+    error:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+        error:
+          type: object
+  # security:
+  #   - bearerAuth: []
+  #     name: Authorization
+  #     in: header
+paths:
+  /:
+    get:
+      summary: This api is used to check if get method is working or not
+      description: This api is used to check if get method is working or not
+      responses:
+        200:
+          description: Logout success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/base"
+              example:
+                {
+                  status: "Success",
+                  message: "Welcome to SIBICARA API, documentation using Swagger.",
+                  repositoryUrl: "https://github.com/nikola4512/sibicara-firebase-api",
+                }
+  /signup:
+    post:
+      tags:
+        - Authorization
+      summary: Signup account
+      description: This API is used to signup account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              {
+                "name": "Budi Gunawan",
+                "birthDate": "28/08/2002",
+                "gender": "laki-laki",
+                "phoneNumber": "089888888888",
+                "email": "budigunawan@gmail.com",
+                "password": "hehehe",
+                "address": "Jl. Pagaralam No 2, Kelurahan Sukamaju, Kecamatan Sukarame, Bandar Lampung",
+              }
+      responses:
+        201:
+          description: Signup success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/signup"
+              example:
+                {
+                  "status": "Success",
+                  "message": "Signup successful",
+                  "data":
+                    {
+                      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MTkwNDg0ODQsImV4cCI6MTcxOTY1MzI4NH0.ywXVefGSL-HlQ-LZebaAfuAnToGKrS2Gii1SNjGuFNc",
+                    },
+                }
+        400:
+          description: Email Already Exists
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { "status": "Failed", "message": "Email Already Exists" }
+        500:
+          description: Error writing document
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example:
+                {
+                  "status": "Failed",
+                  "message": "Error writing document",
+                  "error": {},
+                }
+  /signin:
+    post:
+      tags:
+        - Authorization
+      summary: Signin account
+      description: This API is used to signin account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            example: { "email": "budigunawan@gmail.com", "password": "hehehe" }
+      responses:
+        200:
+          description: Signin success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/signin"
+              example:
+                {
+                  "status": "Success",
+                  "message": "Signin successful",
+                  "data":
+                    {
+                      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MTkwNDg0ODQsImV4cCI6MTcxOTY1MzI4NH0.ywXVefGSL-HlQ-LZebaAfuAnToGKrS2Gii1SNjGuFNc",
+                    },
+                }
+        401:
+          description: Incorect password
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example:
+                { "status": "Failed", "message": "Incorrect email or password" }
+  /signout:
+    delete:
+      tags:
+        - Authorization
+      summary: Signout account
+      description: This API is used to signout account (JWT authorization is required)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Signout success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/signout"
+              example: { "status": "Success", "message": "Signout success" }
+        401:
+          description: Can't find JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Failed", message: "Can't find JWT token" }
+        403:
+          description: JWT token invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Forbidden", message: "JWT token invalid" }
+  /user:
+    get:
+      tags:
+        - User
+      summary: Get user data
+      description: This API is used get user data (JWT authorization is required)
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success get user data
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/getuser"
+              example:
+                {
+                  "status": "Success",
+                  "message": "Get user data success",
+                  "data":
+                    {
+                      "email": "budigunawan@gmail.com",
+                      "phoneNumber": "089888888888",
+                      "address": "Jl. Pagaralam No 2, Kelurahan Sukamaju, Kecamatan Sukarame, Bandar Lampung",
+                      "name": "Budi Gunawan",
+                      "birthDate": "28/08/2002",
+                      "gender": "laki-laki",
+                    },
+                }
+        401:
+          description: Can't find JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Failed", message: "Can't find JWT token" }
+        403:
+          description: JWT token invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Forbidden", message: "JWT token invalid" }
+        500:
+          description: Get user data failed
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example:
+                { status: "Failed", message: "Get user data failed", Error: {} }
+  /user/update:
+    get:
+      tags:
+        - User
+      summary: Update user data
+      description: This API is used to get user data (JWT authorization is required)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              { "name": "Budi Gunawan Sandi", "phone_number": "089777777777" }
+      responses:
+        200:
+          description: Update user data success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/updateuser"
+              example:
+                { status: "Success", message: "Update user data success" }
+        401:
+          description: Can't find JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Failed", message: "Can't find JWT token" }
+        403:
+          description: JWT token invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Forbidden", message: "JWT token invalid" }
+        500:
+          description: Update user data failed
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example:
+                {
+                  status: "Failed",
+                  message: "Update user data failed",
+                  Error: {},
+                }
+  /quiz/{material}:
+    get:
+      tags:
+        - Quiz
+      summary: Get quiz question
+      description: This API is used to get quiz question (Authorization is required)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: material
+          description: Path quiz question material desired(relations, alphabet)
+          required: true
+          schema:
+            type: string
+            example: relations
+        - in: query
+          name: count
+          description: Query count quiz question (ex 5)
+          required: true
+          schema:
+            type: integer
+            example: 5
+      response:
+        200:
+          description: Get quiz question success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/getquiz"
+              example:
+                {
+                  "status": "Success",
+                  "message": "Successfully get data",
+                  "data":
+                    [
+                      {
+                        "id": 4,
+                        "video_url": "https://pmpk.kemdikbud.go.id/sibi/SIBI/katadasar/Ibu.webm",
+                        "answer1": "Saudara",
+                        "answer2": "Kakak",
+                        "answer3": "Adik",
+                        "answer4": "Ibu",
+                      },
+                      {
+                        "id": 3,
+                        "video_url": "https://pmpk.kemdikbud.go.id/sibi/SIBI/katadasar/Bibi.webm",
+                        "answer1": "Paman",
+                        "answer2": "Kakak",
+                        "answer3": "Bibi",
+                        "answer4": "Ayah",
+                      },
+                      {
+                        "id": 9,
+                        "video_url": "https://pmpk.kemdikbud.go.id/sibi/SIBI/katadasar/Saudara.webm",
+                        "answer1": "Saudara",
+                        "answer2": "Paman",
+                        "answer3": "Kakek",
+                        "answer4": "Ayah",
+                      },
+                    ],
+                }
+        401:
+          description: Can't find JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Failed", message: "Can't find JWT token" }
+        403:
+          description: JWT token invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Forbidden", message: "JWT token invalid" }
+    post:
+      tags:
+        - Quiz
+      summary: Post quiz answer
+      description: This API is used to post quiz answer (Authorization is required)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: material
+          in: path
+          description: Path quiz answer material desired(relations, alphabet)
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+            example:
+              {
+                "data":
+                  [
+                    { "id": 23, "answer": "W" },
+                    { "id": 24, "answer": "Z" },
+                    { "id": 15, "answer": "O" },
+                    { "id": 5, "answer": "E" },
+                    { "id": 11, "answer": "K" },
+                  ],
+              }
+      response:
+        200:
+          description: Post quiz answer success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/postquiz"
+              example:
+                {
+                  "status": "Success",
+                  "message": "Successfully get data",
+                  "data": { "true_answer": 3, "quiz_length": 5, "score": 60 },
+                }
+        401:
+          description: Can't find JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Failed", message: "Can't find JWT token" }
+        403:
+          description: JWT token invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Forbidden", message: "JWT token invalid" }
+  /material/{material}:
+    get:
+      tags:
+        - Material
+      summary: Get learning materials
+      description: This API is used to get learning materials (Authorization is required)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: material
+          in: path
+          description: Path learning materials (relations, alphabet)
+          required: true
+          schema:
+            type: string
+      response:
+        200:
+          description: Get learning material success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/getmaterialpart"
+              example:
+                {
+                  "status": "Success",
+                  "message": "Successfully get data",
+                  "data":
+                    [
+                      {
+                        "id": 1,
+                        "word": "adik",
+                        "video_url": "https://pmpk.kemdikbud.go.id/sibi/SIBI/katadasar/Adik.webm",
+                      },
+                      { "id": 2, "word": "etc", "video_url": "etc" },
+                    ],
+                }
+        401:
+          description: Can't find JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Failed", message: "Can't find JWT token" }
+        403:
+          description: JWT token invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Forbidden", message: "JWT token invalid" }
+  /material/{material}/{submaterial}:
+    get:
+      tags:
+        - Material
+      summary: Get one of the learning materials
+      description: This API is used to get one of the learning materials (Authorization is required)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: material
+          in: path
+          description: Path learning materials (relations, alphabet)
+          required: true
+          schema:
+            type: string
+        - name: submaterial
+          in: path
+          description: Path one of the learning materials (ex mother, father or ex a, b)
+          required: true
+          schema:
+            type: string
+      response:
+        200:
+          description: Get one of the learning material success
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/getoneofthematerialpart"
+              example:
+                {
+                  "status": "Success",
+                  "message": "Successfully get data",
+                  "data":
+                    {
+                      "id": 1,
+                      "word": "adik",
+                      "video_url": "https://pmpk.kemdikbud.go.id/sibi/SIBI/katadasar/Adik.webm",
+                    },
+                }
+        401:
+          description: Can't find JWT token
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Failed", message: "Can't find JWT token" }
+        403:
+          description: JWT token invalid
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: "#components/schema/error"
+              example: { status: "Forbidden", message: "JWT token invalid" }

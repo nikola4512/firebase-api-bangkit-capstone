@@ -11,18 +11,26 @@ import {
 import "dotenv/config";
 import jwt from "jsonwebtoken";
 import functions from "firebase-functions";
+import swaggerJSDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
+import fs from "fs";
+import YAML from "yaml";
 import express from "express";
 
 const app = express();
 app.use(express.json());
 
-// const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
+
+// const swaggerSpec = swaggerJSDoc(options);
+const swaggerSpec = YAML.parse(fs.readFileSync("doc.yaml", "utf8"));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Welcome to SIBICARA API",
-    documentation_url:
-      "https://github.com/nikola4512/firebase-api-bangkit-capstone.git",
+    status: "Success",
+    message: "Welcome to SIBICARA API, documentation using Swagger.",
+    repositoryUrl: "https://github.com/nikola4512/sibicara-firebase-api",
   });
 });
 
@@ -30,28 +38,24 @@ app.get("/", (req, res) => {
 app.post("/signup", async (req, res) => {
   let signupData = {
     name: req.body.name,
-    birth_date: req.body.birth_date,
+    birthDate: req.body.birthDate,
     gender: req.body.gender,
-    phone_number: req.body.phone_number,
+    phoneNumber: req.body.phoneNumber,
     email: req.body.email,
     password: req.body.password,
     address: req.body.address,
   };
-  const httpRequest = await emailSignup(signupData);
-  const user = { user_id: httpRequest.user_id };
-  const accessToken = generateAccessToken(user);
-  httpRequest.statusCode === 201 ? storeAccessToken(accessToken) : null;
-
-  res.status(httpRequest.statusCode);
-  res.json({
-    status: httpRequest.status,
-    message: httpRequest.message,
-    error: httpRequest.error,
-    data: {
-      user_id: httpRequest.user_id,
-      accessToken: accessToken,
-    },
-  });
+  const response = await emailSignup(signupData);
+  if (response.statusCode === 201) {
+    const user = { userId: response.userId };
+    const accessToken = generateAccessToken(user);
+    await storeAccessToken(accessToken);
+    response.data.accessToken = accessToken;
+  }
+  res.status(response.statusCode);
+  delete response.statusCode;
+  delete response.userId;
+  res.json(response);
 });
 
 app.post("/signin", async (req, res) => {
@@ -59,52 +63,63 @@ app.post("/signin", async (req, res) => {
     email: req.body.email,
     password: req.body.password,
   };
-  const httpRequest = await emailSignin(signinData);
-  const user = { user_id: httpRequest.user_id };
-  const accessToken = generateAccessToken(user);
-  httpRequest.statusCode === 200 ? storeAccessToken(accessToken) : null;
-
-  res.status(httpRequest.statusCode);
-  res.json({
-    status: httpRequest.status,
-    message: httpRequest.message,
-    error: httpRequest.error,
-    data: {
-      user_id: httpRequest.user_id,
-      accessToken: accessToken,
-    },
-  });
+  const response = await emailSignin(signinData);
+  if (response.statusCode === 200) {
+    const user = { userId: response.userId };
+    const accessToken = generateAccessToken(user);
+    await storeAccessToken(accessToken);
+    response.data.accessToken = accessToken;
+  }
+  res.status(response.statusCode);
+  delete response.statusCode;
+  delete response.userId;
+  res.json(response);
 });
 
-app.delete("/signout", async (req, res) => {
+app.delete("/signout", authenticateToken, async (req, res) => {
   let token = req.headers.authorization;
   token = token.split(" ")[1];
-  const result = await signout(token);
-  res.json(result);
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, user) => {
+    const result = await signout(token);
+    res.json({
+      status: "Success",
+      message: "Signout success",
+    });
+  });
 });
 
 // FEATURE GET AND PUT USER DATA
 app.get("/user", authenticateToken, (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, user) => {
-    const response = await getUserData(user.user_id);
-    if (response.statusCode) {
-      res.status = userData.statusCode;
+    if (!err) {
+      const response = await getUserData(user.userId);
+      res.status(response.statusCode);
       delete response.statusCode;
+      res.json(response);
+    } else {
+      res.status(401);
+      res.json({
+        error: err,
+      });
     }
-    res.json(response);
   });
 });
 
-app.put("/user/update", authenticateToken, async (req, res) => {
+app.put("/user/update", authenticateToken, (req, res) => {
   const token = req.headers.authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, user) => {
-    const response = await updateUserData(user.user_id, req.body);
-    if (response.statusCode) {
-      res.status = response.statusCode;
+    if (!err) {
+      const response = await updateUserData(user.userId, req.body);
+      res.status(response.statusCode);
       delete response.statusCode;
+      res.json(response);
+    } else {
+      res.status(401);
+      res.json({
+        error: err,
+      });
     }
-    res.json(response);
   });
 });
 
@@ -177,19 +192,19 @@ function generateAccessToken(user) {
 
 function authenticateToken(req, res, next) {
   // authorization: Bearer TOKEN // header
-  let token = req.headers.authorization.split(" ")[1];
-  if (token == null) {
+  let token = req.headers.authorization;
+  if (token === undefined) {
     return res.status(401).json({
       status: "Failed",
-      message: "Cant find token in header",
+      message: "Can't find JWT token",
     });
   } else {
+    token = token.split(" ")[1];
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
       if (err) {
         return res.status(403).json({
           status: "Forbidden",
-          message: "Cannot authorization",
-          error: err,
+          message: "JWT token invalid",
         });
       } else {
         req.user = user;
@@ -199,7 +214,7 @@ function authenticateToken(req, res, next) {
   }
 }
 
-// app.listen(port);
+app.listen(port);
 
 // Export the Express app as a Firebase Cloud Function
-export const webApp = functions.https.onRequest(app);
+// export const webApp = functions.https.onRequest(app);
